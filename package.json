@@ -1,0 +1,35 @@
+{
+    "name": "compare-two-marvel-characters",
+    "version": "1.0.0",
+    "description": "",
+    "main": "dev/js/load.js",
+    "scripts": {
+        "test": "mocha dev/test"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/julianmedwards/compare-two-marvel-characters.git"
+    },
+    "author": "Julian Edwards",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/julianmedwards/compare-two-marvel-characters/issues"
+    },
+    "homepage": "https://github.com/julianmedwards/compare-two-marvel-characters#readme",
+    "dependencies": {
+        "autoprefixer": "^10.4.13",
+        "chai": "^4.3.7",
+        "d3": "^7.6.1",
+        "gulp": "^4.0.2",
+        "gulp-clean-css": "^4.3.0",
+        "gulp-image": "^6.3.1",
+        "gulp-mocha": "^8.0.0",
+        "gulp-postcss": "^9.0.1",
+        "gulp-sourcemaps": "^3.0.0",
+        "jquery": "^3.6.1",
+        "jsdom": "^20.0.3",
+        "mocha": "^10.1.0",
+        "sinon": "^15.0.0"
+    },
+    "type": "module"
+}
