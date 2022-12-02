@@ -3,22 +3,24 @@
 import $ from 'jquery'
 
 function initialize() {
-    const API = {}
-    const APIRequest = init.retrieveAPIKeys(API)
+    const APIRequest = init.retrieveAPIKeys()
     APIRequest.done((API) => {
         const pageDataLoaded = init.populatePageData(API)
-        pageDataLoaded.done(() => {
-            init.initEventListeners(API)
-        })
-    })
-    // .fail(() => {
-    //     alert(
-    //         'Unable to load page data. Please try again or contact julian.michael.edwards@gmail.com'
-    //     )
-    // })
+        pageDataLoaded
+            .done(() => {
+                init.initEventListeners(API)
+            })
+            .fail(init.failLoad)
+    }).fail(init.failLoad)
 }
 
-function retrieveAPIKeys(API) {
+function failLoad() {
+    window.alert(
+        'Unable to load page data. Please try again or contact julian.michael.edwards@gmail.com'
+    )
+}
+
+function retrieveAPIKeys() {
     const request = $.Deferred()
 
     $.getJSON('./config.json', function (data) {
@@ -50,8 +52,9 @@ export const init = {
     retrieveAPIKeys,
     populatePageData,
     initEventListeners,
+    failLoad,
 }
 
-export const jqRef = {
+export const testRefs = {
     $,
 }

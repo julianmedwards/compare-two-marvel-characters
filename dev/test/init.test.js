@@ -5,53 +5,96 @@ import sinon from 'sinon'
 
 const mockPage = '<!DOCTYPE html><head></head><body></body>'
 
+// Fake dom with Jquery attached.
 import {JSDOM} from 'jsdom'
 const {window} = new JSDOM(mockPage)
-import pkg from 'jquery'
-const $ = pkg(window)
-// console.log(`jQuery ${$.fn.jquery} working! Yay!!!`)
-// $('body').html('<p>Please work</p>')
-// console.log($('p').text())
+global.window = window
+import jq from 'jquery'
+const $ = jq(window)
 
 import {init} from '../js/init.js'
-import {jqRef} from '../js/init.js'
+import {testRefs} from '../js/init.js'
 
-describe('Retrieve API key', function () {
+describe('init.js', function () {
     this.beforeAll(function () {
-        sinon.restore()
-        sinon.replace(jqRef, '$', $)
+        // Swap script's Jquery with ours attached to the fake dom.
+        sinon.replace(testRefs, '$', $)
     })
-    describe('init.initialize() integration', function () {
-        it('do things', function () {
-            const retrieveAPI = sinon
-                .stub(init, 'retrieveAPIKeys')
-                .callsFake(() => {
-                    const d1 = $.Deferred()
-                    d1.resolve()
-                    return d1.promise()
-                })
-            const populatePage = sinon
-                .stub(init, 'populatePageData')
-                .callsFake(() => {
-                    const d2 = $.Deferred()
-                    d2.resolve()
-                    return d2.promise()
-                })
-            const initELs = sinon.spy(init, 'initEventListeners')
+    this.beforeEach(function () {
+        sinon.restore()
+    })
+    describe('Retrieve API key', function () {
+        describe('init.initialize()', function () {
+            let retrieveAPI, populatePage, initEls
+            this.beforeEach(function () {
+                initEls = sinon.stub(init, 'initEventListeners')
+            })
+            it('should make its three calls on success', function () {
+                retrieveAPI = sinon
+                    .stub(init, 'retrieveAPIKeys')
+                    .callsFake(() => {
+                        const d = $.Deferred()
+                        d.resolve()
+                        return d.promise()
+                    })
+                populatePage = sinon
+                    .stub(init, 'populatePageData')
+                    .callsFake(() => {
+                        const d = $.Deferred()
+                        d.resolve()
+                        return d.promise()
+                    })
 
-            init.initialize()
+                init.initialize()
 
-            sinon.assert.calledOnce(retrieveAPI)
-            sinon.assert.calledOnce(populatePage)
-            sinon.assert.calledOnce(initELs)
+                sinon.assert.calledOnce(retrieveAPI)
+                sinon.assert.calledOnce(populatePage)
+                sinon.assert.calledOnce(initEls)
+            })
+            it('should fail on retrieveAPIKeys rejection', function () {
+                retrieveAPI = sinon
+                    .stub(init, 'retrieveAPIKeys')
+                    .callsFake(() => {
+                        const d = $.Deferred()
+                        d.reject()
+                        return d.promise()
+                    })
+                populatePage = sinon.stub(init, 'populatePageData')
+
+                const failLoad = sinon.stub(init, 'failLoad')
+
+                init.initialize()
+
+                sinon.assert.calledOnce(retrieveAPI)
+                sinon.assert.calledOnce(failLoad)
+                sinon.assert.notCalled(populatePage)
+                sinon.assert.notCalled(initEls)
+            })
+            it('should fail on populatePageData rejection', function () {
+                retrieveAPI = sinon
+                    .stub(init, 'retrieveAPIKeys')
+                    .callsFake(() => {
+                        const d = $.Deferred()
+                        d.resolve()
+                        return d.promise()
+                    })
+                populatePage = sinon
+                    .stub(init, 'populatePageData')
+                    .callsFake(() => {
+                        const d = $.Deferred()
+                        d.reject()
+                        return d.promise()
+                    })
+
+                const failLoad = sinon.stub(init, 'failLoad')
+
+                init.initialize()
+
+                sinon.assert.calledOnce(retrieveAPI)
+                sinon.assert.calledOnce(populatePage)
+                sinon.assert.calledOnce(failLoad)
+                sinon.assert.notCalled(initEls)
+            })
         })
     })
 })
-
-// describe('Test-test', function () {
-//     it('should succeed', function () {
-//         let spy = sinon.spy(init, 'initialize')
-//         init.initialize()
-//         sinon.assert.calledOnce(spy)
-//     })
-// })
