@@ -1,6 +1,7 @@
 'use strict'
 
 import $ from 'jquery'
+import {vis} from './visualization.js'
 
 function initialize() {
     const APIRequest = init.retrieveAPIKeys()
@@ -31,6 +32,13 @@ function retrieveAPIKeys() {
         request.reject()
     })
 
+    $.get({
+        url: `https://api.themoviedb.org/3/person/18918/changes?api_key=2f53ed057a5040f94bf52c398ed4a659&page=1`,
+        success: (data) => {
+            console.log(data)
+        },
+    })
+
     return request.promise()
 }
 
@@ -45,6 +53,7 @@ function populatePageData() {
 
 function initEventListeners() {
     // Placeholder
+    vis.entry()
 }
 
 export const init = {

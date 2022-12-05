@@ -6,6 +6,10 @@ import cleanCSS from "gulp-clean-css";
 import image from "gulp-image";
 import mocha from "gulp-mocha";
 
+import webpack from "webpack-stream";
+import through from "through2";
+import * as webpackCfg from "./webpack.config.js";
+
 function autoprefix() {
     return g
         .src("dev/css/*.css")
@@ -42,17 +46,26 @@ function testAll() {
 function moveHTML() {
     return g.src("dev/index.html").pipe(g.dest("dist"));
 }
-function moveJS() {
-    return g.src("dev/js/*").pipe(g.dest("dist/js"));
-}
 function moveConfig() {
     return g.src("dev/config.json*").pipe(g.dest("dist/"));
+}
+
+function webpackJS() {
+    return g
+        .src("dev/js/load.js")
+        .pipe(
+            webpack({
+                mode: "production",
+                devtool: "source-map",
+            })
+        )
+        .pipe(g.dest("dist/js/"));
 }
 
 export default g.series(
     g.parallel(
         moveHTML,
-        moveJS,
+        webpackJS,
         moveConfig,
         optimizeImg,
         g.series(autoprefix, minifyCSS)
