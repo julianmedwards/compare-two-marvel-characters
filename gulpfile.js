@@ -7,8 +7,6 @@ import image from "gulp-image";
 import mocha from "gulp-mocha";
 
 import webpack from "webpack-stream";
-import through from "through2";
-import * as webpackCfg from "./webpack.config.js";
 
 function autoprefix() {
     return g

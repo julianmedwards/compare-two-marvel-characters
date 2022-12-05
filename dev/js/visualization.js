@@ -17,16 +17,19 @@ export const vis = {entry, dummy}
 
 // Widgets
 
-// 1: Personal Popularity
+// 1: Personal Popularity,
+// L/R image mask fill over marvel logo, percentage comparison
 // Compare actor's popularity
 
-// 2: Role popularity
+// 2: Role popularity,
+// Word cloud by role popularity, highlight most popular
+// role and winner
 // Compare actor's most popular role's popularity
 
-// Can show change in popularity over past 14 days?
-
-// 2: Credits
+// 2: Credits,
 // Number of movies/tv shows they've been in
 // Number of marvel movies/shows they've been in
 
-// 3:
+// 3: Runtime/# of Movies, Bar Graph
+// Combined runtime of all their movies?
+// Bar graph, compare with # of movies

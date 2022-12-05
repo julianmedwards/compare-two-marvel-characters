@@ -6,12 +6,18 @@ import {vis} from './visualization.js'
 function initialize() {
     const APIRequest = init.retrieveAPIKeys()
     APIRequest.done((API) => {
-        const pageDataLoaded = init.populatePageData(API)
-        pageDataLoaded
-            .done(() => {
-                init.initEventListeners(API)
-            })
-            .fail(init.failLoad)
+        let actor1 = '3223'
+        let actor2 = '71580'
+        const actorRequest = init.retrieveActorData(API, actor1, actor2)
+        actorRequest.done((actors) => {
+            console.log(actors)
+            const pageDataLoaded = init.populatePageData(API, actors)
+            pageDataLoaded
+                .done(() => {
+                    init.initEventListeners(API)
+                })
+                .fail(init.failLoad)
+        })
     }).fail(init.failLoad)
 }
 
@@ -21,8 +27,21 @@ function failLoad() {
     )
 }
 
+function tmdbRequest(url) {
+    const request = jq.$.Deferred()
+
+    jq.$.get({
+        url: url,
+        success: (data) => {
+            request.resolve(data)
+        },
+    })
+
+    return request.promise()
+}
+
 function retrieveAPIKeys() {
-    const request = $.Deferred()
+    const request = jq.$.Deferred()
 
     $.getJSON('./config.json', function (data) {
         const API = {key: data.tmdbAPIKey, RAToken: data.tmdbReadAccessToken}
@@ -32,38 +51,50 @@ function retrieveAPIKeys() {
         request.reject()
     })
 
-    $.get({
-        url: `https://api.themoviedb.org/3/person/18918/changes?api_key=2f53ed057a5040f94bf52c398ed4a659&page=1`,
-        success: (data) => {
-            console.log(data)
-        },
+    return request.promise()
+}
+
+function retrieveActorData(API, actor1, actor2) {
+    const completed = jq.$.Deferred()
+
+    const getActor1 = init.tmdbRequest(
+        `https://api.themoviedb.org/3/person/${actor1}?api_key=${API.key}`
+    )
+    const getActor2 = init.tmdbRequest(
+        `https://api.themoviedb.org/3/person/${actor2}?api_key=${API.key}`
+    )
+
+    jq.$.when(getActor1, getActor2).done((data1, data2) => {
+        completed.resolve({actor1: data1, actor2: data2})
     })
 
-    return request.promise()
+    return completed.promise()
 }
 
 function populatePageData() {
     // Placeholder
-    const request = $.Deferred()
+    const completed = jq.$.Deferred()
 
-    request.resolve()
+    completed.resolve()
 
-    return request.promise()
+    return completed.promise()
 }
 
 function initEventListeners() {
     // Placeholder
-    vis.entry()
 }
 
 export const init = {
     initialize,
+    tmdbRequest,
     retrieveAPIKeys,
+    retrieveActorData,
     populatePageData,
     initEventListeners,
     failLoad,
 }
 
-export const testRefs = {
+// Export reference to jquery so it can be accessed by sinon.
+export const jq = {
     $,
 }
