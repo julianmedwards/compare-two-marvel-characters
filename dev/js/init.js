@@ -9,15 +9,17 @@ function initialize() {
         let actor1 = '3223'
         let actor2 = '71580'
         const actorRequest = init.retrieveActorData(API, actor1, actor2)
-        actorRequest.done((actors) => {
-            console.log(actors)
-            const pageDataLoaded = init.populatePageData(API, actors)
-            pageDataLoaded
-                .done(() => {
-                    init.initEventListeners(API)
-                })
-                .fail(init.failLoad)
-        })
+        actorRequest
+            .done((actors) => {
+                console.log(actors)
+                const pageDataLoaded = init.populatePageData(API, actors)
+                pageDataLoaded
+                    .done(() => {
+                        init.initEventListeners(API)
+                    })
+                    .fail(init.failLoad)
+            })
+            .fail(init.failLoad)
     }).fail(init.failLoad)
 }
 

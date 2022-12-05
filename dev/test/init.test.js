@@ -21,6 +21,7 @@ describe('init.js', function () {
         sinon.restore()
         // Swap script's Jquery with ours attached to the fake dom.
         sinon.replace(jq, '$', $)
+        sinon.stub(console, 'log')
     })
     describe('Retrieve API key', function () {
         describe('init.initialize()', function () {
@@ -58,50 +59,85 @@ describe('init.js', function () {
                 sinon.assert.calledOnce(populatePage)
                 sinon.assert.calledOnce(initEls)
             })
-            // it('should fail on retrieveAPIKeys rejection', function () {
-            //     retrieveAPI = sinon
-            //         .stub(init, 'retrieveAPIKeys')
-            //         .callsFake(() => {
-            //             const d = $.Deferred()
-            //             d.reject()
-            //             return d.promise()
-            //         })
-            //     populatePage = sinon.stub(init, 'populatePageData')
+            it('should fail on retrieveAPIKeys rejection', function () {
+                retrieveAPI = sinon
+                    .stub(init, 'retrieveAPIKeys')
+                    .callsFake(() => {
+                        const d = $.Deferred()
+                        d.reject()
+                        return d.promise()
+                    })
+                retrieveActors = sinon.stub(init, 'retrieveActorData')
+                populatePage = sinon.spy(init, 'populatePageData')
 
-            //     const failLoad = sinon.stub(init, 'failLoad')
+                const failLoad = sinon.stub(init, 'failLoad')
 
-            //     init.initialize()
+                init.initialize()
 
-            //     sinon.assert.calledOnce(retrieveAPI)
-            //     sinon.assert.calledOnce(failLoad)
-            //     sinon.assert.notCalled(populatePage)
-            //     sinon.assert.notCalled(initEls)
-            // })
-            // it('should fail on populatePageData rejection', function () {
-            //     retrieveAPI = sinon
-            //         .stub(init, 'retrieveAPIKeys')
-            //         .callsFake(() => {
-            //             const d = $.Deferred()
-            //             d.resolve({key: 'fakeKey', RAToken: 'fakeToken'})
-            //             return d.promise()
-            //         })
-            //     populatePage = sinon
-            //         .stub(init, 'populatePageData')
-            //         .callsFake(() => {
-            //             const d = $.Deferred()
-            //             d.reject()
-            //             return d.promise()
-            //         })
+                sinon.assert.calledOnce(retrieveAPI)
+                sinon.assert.calledOnce(failLoad)
+                sinon.assert.notCalled(retrieveActors)
+                sinon.assert.notCalled(populatePage)
+            })
+            it('should fail on retrieveActorData rejection', function () {
+                retrieveAPI = sinon
+                    .stub(init, 'retrieveAPIKeys')
+                    .callsFake(() => {
+                        const d = $.Deferred()
+                        d.resolve({key: 'fakeKey', RAToken: 'fakeToken'})
+                        return d.promise()
+                    })
+                retrieveActors = sinon
+                    .stub(init, 'retrieveActorData')
+                    .callsFake(() => {
+                        const d = $.Deferred()
+                        d.reject()
+                        return d.promise()
+                    })
+                populatePage = sinon.spy(init, 'populatePageData')
 
-            //     const failLoad = sinon.stub(init, 'failLoad')
+                const failLoad = sinon.stub(init, 'failLoad')
 
-            //     init.initialize()
+                init.initialize()
 
-            //     sinon.assert.calledOnce(retrieveAPI)
-            //     sinon.assert.calledOnce(populatePage)
-            //     sinon.assert.calledOnce(failLoad)
-            //     sinon.assert.notCalled(initEls)
-            // })
+                sinon.assert.calledOnce(retrieveAPI)
+                sinon.assert.calledOnce(retrieveActors)
+                sinon.assert.calledOnce(failLoad)
+                sinon.assert.notCalled(populatePage)
+            })
+            it('should fail on populatePageData rejection', function () {
+                retrieveAPI = sinon
+                    .stub(init, 'retrieveAPIKeys')
+                    .callsFake(() => {
+                        const d = $.Deferred()
+                        d.resolve({key: 'fakeKey', RAToken: 'fakeToken'})
+                        return d.promise()
+                    })
+                retrieveActors = sinon
+                    .stub(init, 'retrieveActorData')
+                    .callsFake(() => {
+                        const d = $.Deferred()
+                        d.resolve({actor1: 'fakeActor', actor2: 'fakeActor'})
+                        return d.promise()
+                    })
+                populatePage = sinon
+                    .stub(init, 'populatePageData')
+                    .callsFake(() => {
+                        const d = $.Deferred()
+                        d.reject()
+                        return d.promise()
+                    })
+
+                const failLoad = sinon.stub(init, 'failLoad')
+
+                init.initialize()
+
+                sinon.assert.calledOnce(retrieveAPI)
+                sinon.assert.calledOnce(retrieveActors)
+                sinon.assert.calledOnce(populatePage)
+                sinon.assert.calledOnce(failLoad)
+                sinon.assert.notCalled(initEls)
+            })
         })
     })
 })
