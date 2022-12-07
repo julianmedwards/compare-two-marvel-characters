@@ -12,3 +12,30 @@
     --white: #ffff;
     --active-white: #ead9cc;
 }
+
+#widgets {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 0rem 1rem;
+}
+
+.widget {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    flex: calc(50% - 2rem);
+    padding: 1rem;
+    margin: 1rem;
+    border-left: var(--active-white) solid 1px;
+    border-right: var(--active-white) solid 1px;
+}
+
+#personal-pop {
+    /* border-top: var(--orange) solid 1rem; */
+}
+
+#personal-pop > img {
+    width: 50%;
+}
