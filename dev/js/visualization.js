@@ -27,14 +27,14 @@ function buildCreditTypeWidget(actors) {
     const actor1Chart = vis.PieChart(actor1Data, {
         name: (actor1Data) => actor1Data.name,
         value: (actor1Data) => actor1Data.value,
-        width: 200,
-        height: 200,
+        width: 300,
+        height: 300,
     })
     const actor2Chart = vis.PieChart(actor2Data, {
         name: (actor2Data) => actor2Data.name,
         value: (actor2Data) => actor2Data.value,
-        width: 200,
-        height: 200,
+        width: 300,
+        height: 300,
     })
     return [actor1Chart, actor2Chart]
 }
