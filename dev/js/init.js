@@ -94,6 +94,8 @@ function populatePageData(actors) {
 }
 
 function buildWidgets(actors) {
+    const rolePopChart = vis.buildRolePopWidget(actors)
+    $('#role-pop .chart').append(rolePopChart)
     const charts = vis.buildCreditTypeWidget(actors)
     $('#credit-type .chart').first().append(charts[0])
     $('#credit-type .chart').last().append(charts[1])
