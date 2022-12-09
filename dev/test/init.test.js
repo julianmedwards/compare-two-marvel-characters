@@ -55,7 +55,7 @@ describe('init.js', function () {
 
                 sinon.assert.calledOnce(retrieveAPI)
                 sinon.assert.calledOnce(retrieveActors)
-                sinon.assert.calledTwice(tmdbRequest)
+                sinon.assert.callCount(tmdbRequest, 4)
                 sinon.assert.calledOnce(populatePage)
                 sinon.assert.calledOnce(initEls)
             })

@@ -1,6 +1,7 @@
 'use strict'
 
 import * as d3 from 'd3'
+
 import {data} from './data.js'
 
 // Information
@@ -10,10 +11,7 @@ import {data} from './data.js'
 
 // Widgets
 
-// 1: Role popularity,
-// Horizontal bar chart
-// Compare actor's most popular role's popularity
-
+// 1: Compare most popular rolls, horizontal bar chart.
 function buildRolePopWidget(actors) {
     const actor1Roles = data.getPopularRolesData(actors.actor1)
     const actor2Roles = data.getPopularRolesData(actors.actor2)
@@ -37,43 +35,6 @@ function buildRolePopWidget(actors) {
         width: 600,
         colorSet: ['#518cca', '#f78f3f'],
     })
-}
-
-// 2: Credit Types
-// Pie chart
-// Compare type of credits: movie vs tv, cast vs crew, etc.
-
-function buildCreditTypeWidget(actors) {
-    const actor1Data = data.getCreditTypeData(actors.actor1)
-    const actor2Data = data.getCreditTypeData(actors.actor2)
-
-    const actor1Chart = vis.PieChart(actor1Data, {
-        name: (actor1Data) => actor1Data.name,
-        value: (actor1Data) => actor1Data.value,
-        width: 300,
-        height: 300,
-    })
-    const actor2Chart = vis.PieChart(actor2Data, {
-        name: (actor2Data) => actor2Data.name,
-        value: (actor2Data) => actor2Data.value,
-        width: 300,
-        height: 300,
-    })
-    return [actor1Chart, actor2Chart]
-}
-
-// 3: Credits,
-// Number of movies/tv shows they've been in
-// Number of marvel movies/shows they've been in
-// Grouped vertical bar chart
-
-function buildCreditsWidget(actors) {}
-
-// 4: Revenue of movies by year, stacked area/bar chart
-// TV vs Movie?
-
-function buildRevenueWidget(actors) {
-    const revenue = data.getRevenueData(actors)
 }
 
 // Copyright 2021 Observable, Inc.
@@ -252,6 +213,26 @@ function BarChart(
     return svg.node()
 }
 
+// 2: Compare type of credits: movie vs tv vs prod., pie chart.
+function buildCreditTypeWidget(actors) {
+    const actor1Data = data.getCreditTypeData(actors.actor1)
+    const actor2Data = data.getCreditTypeData(actors.actor2)
+
+    const actor1Chart = vis.PieChart(actor1Data, {
+        name: (actor1Data) => actor1Data.name,
+        value: (actor1Data) => actor1Data.value,
+        width: 300,
+        height: 300,
+    })
+    const actor2Chart = vis.PieChart(actor2Data, {
+        name: (actor2Data) => actor2Data.name,
+        value: (actor2Data) => actor2Data.value,
+        width: 300,
+        height: 300,
+    })
+    return [actor1Chart, actor2Chart]
+}
+
 // Copyright 2021 Observable, Inc.
 // Released under the ISC license.
 // https://observablehq.com/@d3/pie-chart
@@ -355,13 +336,163 @@ function PieChart(
     return Object.assign(svg.node(), {scales: {color}})
 }
 
+// 3: Compare # of cast credits, movie vs tv vs marvel,
+// grouped vertical bar chart
+// ***Marvel movie credits need to stack, not be separate.
+function buildCreditCountWidget(actors) {
+    const creditCountData = data.getCreditCountData(
+        actors.actor1,
+        actors.actor2,
+        actors.marvelItems
+    )
+
+    const type = ['Movie Roles', 'Marvel Movies', 'TV Roles', 'Marvel Series']
+
+    return vis.GroupedBarChart(creditCountData, {
+        x: (d) => d.actor,
+        y: (d) => d.count,
+        z: (d) => d.type,
+        xDomain: d3.groupSort(
+            creditCountData,
+            (D) => d3.sum(D, (d) => -d.count),
+            (d) => d.actor
+        ),
+        yLabel: '↑ Credits',
+        zDomain: type,
+        colors: d3.schemeSpectral[type.length],
+        width: 600,
+        height: 500,
+    })
+}
+
+// Copyright 2021 Observable, Inc.
+// Released under the ISC license.
+// https://observablehq.com/@d3/grouped-bar-chart
+function GroupedBarChart(
+    data,
+    {
+        x = (d, i) => i, // given d in data, returns the (ordinal) x-value
+        y = (d) => d, // given d in data, returns the (quantitative) y-value
+        z = () => 1, // given d in data, returns the (categorical) z-value
+        title, // given d in data, returns the title text
+        marginTop = 30, // top margin, in pixels
+        marginRight = 0, // right margin, in pixels
+        marginBottom = 30, // bottom margin, in pixels
+        marginLeft = 40, // left margin, in pixels
+        width = 640, // outer width, in pixels
+        height = 400, // outer height, in pixels
+        xDomain, // array of x-values
+        xRange = [marginLeft, width - marginRight], // [xmin, xmax]
+        xPadding = 0.1, // amount of x-range to reserve to separate groups
+        yType = d3.scaleLinear, // type of y-scale
+        yDomain, // [ymin, ymax]
+        yRange = [height - marginBottom, marginTop], // [ymin, ymax]
+        zDomain, // array of z-values
+        zPadding = 0.05, // amount of x-range to reserve to separate bars
+        yFormat, // a format specifier string for the y-axis
+        yLabel, // a label for the y-axis
+        colors = d3.schemeTableau10, // array of colors
+    } = {}
+) {
+    // Compute values.
+    const X = d3.map(data, x)
+    const Y = d3.map(data, y)
+    const Z = d3.map(data, z)
+
+    // Compute default domains, and unique the x- and z-domains.
+    if (xDomain === undefined) xDomain = X
+    if (yDomain === undefined) yDomain = [0, d3.max(Y)]
+    if (zDomain === undefined) zDomain = Z
+    xDomain = new d3.InternSet(xDomain)
+    zDomain = new d3.InternSet(zDomain)
+
+    // Omit any data not present in both the x- and z-domain.
+    const I = d3
+        .range(X.length)
+        .filter((i) => xDomain.has(X[i]) && zDomain.has(Z[i]))
+
+    // Construct scales, axes, and formats.
+    const xScale = d3.scaleBand(xDomain, xRange).paddingInner(xPadding)
+    const xzScale = d3
+        .scaleBand(zDomain, [0, xScale.bandwidth()])
+        .padding(zPadding)
+    const yScale = yType(yDomain, yRange)
+    const zScale = d3.scaleOrdinal(zDomain, colors)
+    const xAxis = d3.axisBottom(xScale).tickSizeOuter(0)
+    const yAxis = d3.axisLeft(yScale).ticks(height / 60, yFormat)
+
+    // Compute titles.
+    if (title === undefined) {
+        const formatValue = yScale.tickFormat(100, yFormat)
+        title = (i) => `${X[i]}\n${Z[i]}\n${formatValue(Y[i])}`
+    } else {
+        const O = d3.map(data, (d) => d)
+        const T = title
+        title = (i) => T(O[i], i, data)
+    }
+
+    const svg = d3
+        .create('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .attr('viewBox', [0, 0, width, height])
+        .attr('style', 'max-width: 100%; height: auto; height: intrinsic;')
+
+    svg.append('g')
+        .attr('transform', `translate(${marginLeft},0)`)
+        .call(yAxis)
+        .call((g) => g.select('.domain').remove())
+        .call((g) =>
+            g
+                .selectAll('.tick line')
+                .clone()
+                .attr('x2', width - marginLeft - marginRight)
+                .attr('stroke-opacity', 0.1)
+        )
+        .call((g) =>
+            g
+                .append('text')
+                .attr('x', -marginLeft)
+                .attr('y', 10)
+                .attr('fill', 'currentColor')
+                .attr('text-anchor', 'start')
+                .text(yLabel)
+        )
+
+    const bar = svg
+        .append('g')
+        .selectAll('rect')
+        .data(I)
+        .join('rect')
+        .attr('x', (i) => xScale(X[i]) + xzScale(Z[i]))
+        .attr('y', (i) => yScale(Y[i]))
+        .attr('width', xzScale.bandwidth())
+        .attr('height', (i) => yScale(0) - yScale(Y[i]))
+        .attr('fill', (i) => zScale(Z[i]))
+
+    if (title) bar.append('title').text(title)
+
+    svg.append('g')
+        .attr('transform', `translate(0,${height - marginBottom})`)
+        .call(xAxis)
+
+    return Object.assign(svg.node(), {scales: {color: zScale}})
+}
+
+// 4: Revenue of movies by year, stacked area/bar chart
+// TV vs Movie?
+function buildRevenueWidget(actors) {
+    const revenue = data.getRevenueData(actors)
+}
+
 export const vis = {
     buildRolePopWidget,
     buildCreditTypeWidget,
-    buildCreditsWidget,
+    buildCreditCountWidget,
     buildRevenueWidget,
     PieChart,
     BarChart,
+    GroupedBarChart,
 }
 
 export const d = {

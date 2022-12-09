@@ -8,7 +8,13 @@ function initialize() {
     APIRequest.done((API) => {
         let actor1 = '3223'
         let actor2 = '71580'
-        const actorRequest = init.retrieveActorData(API, actor1, actor2)
+        let mcuKeyword = '180547'
+        const actorRequest = init.retrieveActorData(
+            API,
+            actor1,
+            actor2,
+            mcuKeyword
+        )
         actorRequest
             .done((actors) => {
                 console.log(actors)
@@ -59,7 +65,7 @@ function retrieveAPIKeys() {
     return request.promise()
 }
 
-function retrieveActorData(API, actor1, actor2) {
+function retrieveActorData(API, actor1, actor2, keyword) {
     const completed = jq.$.Deferred()
 
     const getActor1 = init.tmdbRequest(
@@ -68,17 +74,75 @@ function retrieveActorData(API, actor1, actor2) {
     const getActor2 = init.tmdbRequest(
         `https://api.themoviedb.org/3/person/${actor2}?api_key=${API.key}&append_to_response=movie_credits,tv_credits`
     )
+    const getMarvelItems = init.retrieveMarvelItems(API, keyword)
 
-    jq.$.when(getActor1, getActor2)
-        .done((data1, data2) => {
+    jq.$.when(getActor1, getActor2, getMarvelItems)
+        .done((actor1Data, actor2Data, marvelData) => {
             completed.resolve({
-                actor1: data1,
-                actor2: data2,
+                actor1: actor1Data,
+                actor2: actor2Data,
+                marvelItems: marvelData,
             })
         })
         .fail(() => {
             completed.reject()
         })
+
+    return completed.promise()
+}
+
+function retrieveMarvelItems(API, keyword) {
+    const completed = jq.$.Deferred()
+
+    const getMarvelMovies = init.requestAllPages(
+        `https://api.themoviedb.org/3/discover/movie?api_key=${API.key}&sort_by=release_date.desc&include_adult=false&include_video=false&with_keywords=${keyword}`
+    )
+
+    const getMarvelSeries = init.requestAllPages(
+        `https://api.themoviedb.org/3/discover/tv?api_key=${API.key}&sort_by=release_date.desc&include_adult=false&include_video=false&with_keywords=${keyword}`
+    )
+
+    jq.$.when(getMarvelMovies, getMarvelSeries)
+        .done((movieData, seriesData) => {
+            completed.resolve({
+                movies: movieData,
+                series: seriesData,
+            })
+        })
+        .fail(() => {
+            // Could actually just fail one widget
+            completed.reject()
+        })
+
+    return completed.promise()
+}
+
+function requestAllPages(url, count = 1, items = []) {
+    const completed = jq.$.Deferred()
+
+    const allPagesRequest = requestPage(url, count, items)
+    allPagesRequest.done((data) => {
+        completed.resolve(data)
+    })
+
+    return completed.promise()
+}
+
+function requestPage(url, count, items) {
+    const completed = jq.$.Deferred()
+
+    const requestPage = init.tmdbRequest(`${url}&page=${count}`)
+    requestPage.done((data) => {
+        items = items.concat(data.results)
+        if (data.total_pages > count) {
+            const nextPage = init.requestPage(url, count + 1, items)
+            nextPage.done((items) => {
+                completed.resolve(items)
+            })
+        } else {
+            completed.resolve(items)
+        }
+    })
 
     return completed.promise()
 }
@@ -96,9 +160,13 @@ function populatePageData(actors) {
 function buildWidgets(actors) {
     const rolePopChart = vis.buildRolePopWidget(actors)
     $('#role-pop .chart').append(rolePopChart)
+
     const charts = vis.buildCreditTypeWidget(actors)
     $('#credit-type .chart').first().append(charts[0])
     $('#credit-type .chart').last().append(charts[1])
+
+    const creditCountChart = vis.buildCreditCountWidget(actors)
+    $('#credit-count .chart').append(creditCountChart)
     // $('#revenue.chart').append(vis.buildRevenueWidget(actors))
 }
 
@@ -111,6 +179,9 @@ export const init = {
     tmdbRequest,
     retrieveAPIKeys,
     retrieveActorData,
+    retrieveMarvelItems,
+    requestAllPages,
+    requestPage,
     populatePageData,
     buildWidgets,
     initEventListeners,

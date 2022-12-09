@@ -1,5 +1,7 @@
 'use strict'
 
+import {count} from 'd3'
+
 function getPopularRolesData(actor) {
     let roles = actor.movie_credits.cast
     roles.sort(data.compareActorPopularity)
@@ -7,7 +9,7 @@ function getPopularRolesData(actor) {
     roles = roles.reduce(function (p, c) {
         if (
             !p.some(function (el) {
-                return compareCharacterName(el.character, c.character)
+                return data.compareCharacterName(el.character, c.character)
             })
         )
             p.push(c)
@@ -54,6 +56,92 @@ function getCreditTypeData(actor) {
     return credits
 }
 
+function getCreditCountData(actor1, actor2, marvelItems) {
+    const actor1Credits = data.separateMarvelCredits(
+        actor1.movie_credits.cast,
+        actor1.tv_credits.cast,
+        marvelItems
+    )
+    const actor2Credits = data.separateMarvelCredits(
+        actor2.movie_credits.cast,
+        actor2.tv_credits.cast,
+        marvelItems
+    )
+
+    return [
+        {
+            actor: actor1.name,
+            count: actor1Credits.movieStd,
+            type: 'Movie Roles',
+        },
+        {
+            actor: actor1.name,
+            count: actor1Credits.movieMrvl,
+            type: 'Marvel Movies',
+        },
+        {
+            actor: actor1.name,
+            count: actor1Credits.tvStd,
+            type: 'TV Roles',
+        },
+        {
+            actor: actor1.name,
+            count: actor1Credits.tvMrvl,
+            type: 'Marvel Series',
+        },
+        {
+            actor: actor2.name,
+            count: actor2Credits.movieStd,
+            type: 'Movie Roles',
+        },
+        {
+            actor: actor2.name,
+            count: actor2Credits.movieMrvl,
+            type: 'Marvel Movies',
+        },
+        {
+            actor: actor2.name,
+            count: actor2Credits.tvStd,
+            type: 'TV Roles',
+        },
+        {
+            actor: actor2.name,
+            count: actor2Credits.tvMrvl,
+            type: 'Marvel Series',
+        },
+    ]
+}
+
+function separateMarvelCredits(movieCredits, tvCredits, marvelItems) {
+    let movieStd, movieMrvl, tvStd, tvMrvl
+
+    const marvelMovieIds = marvelItems.movies.map((el) => el.id)
+    const marvelSeriesIds = marvelItems.series.map((el) => el.id)
+
+    movieStd = movieCredits.reduce((acc, cur) => {
+        if (!marvelMovieIds.includes(cur.id)) {
+            return [...acc, cur]
+        }
+        return acc
+    }, [])
+    movieMrvl = movieCredits.length - movieStd.length
+
+    tvStd = tvCredits.reduce((acc, cur) => {
+        if (!marvelSeriesIds.includes(cur.id)) {
+            return [...acc, cur]
+        }
+        return acc
+    }, [])
+    tvMrvl = tvCredits.length - tvStd.length
+
+    return {
+        movieStd: movieStd.length,
+        movieMrvl: movieMrvl,
+        tvStd: tvStd.length,
+        tvMrvl: tvMrvl,
+    }
+}
+
 function getRevenueData() {
     const revenue = []
     return revenue
@@ -62,6 +150,9 @@ function getRevenueData() {
 export const data = {
     getPopularRolesData,
     compareActorPopularity,
+    compareCharacterName,
     getCreditTypeData,
+    getCreditCountData,
+    separateMarvelCredits,
     getRevenueData,
 }
