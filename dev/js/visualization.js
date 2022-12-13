@@ -25,6 +25,7 @@ function buildRolePopWidget(actors) {
     return vis.BarChart(rolesData, {
         x: (d) => d.popularity,
         y: (d) => d.character,
+        title: (d) => d.title,
         srcs: srcs,
         yDomain: d3.groupSort(
             rolesData,
@@ -63,7 +64,7 @@ function BarChart(
         yDomain, // an array of (ordinal) y-values
         yRange, // [top, bottom]
         colorSet, // A color scheme set for bar filling
-        titleColor = 'white', // title fill color when atop bar
+        titleColor = 'black', // title fill color when atop bar
         titleAltColor = 'currentColor', // title fill color when atop background
     } = {}
 ) {
@@ -151,16 +152,17 @@ function BarChart(
 
     svg.append('g')
         .attr('fill', titleColor)
-        .attr('text-anchor', 'end')
+        .attr('text-anchor', 'start')
         .attr('font-family', 'sans-serif')
         .attr('font-size', 10)
+        .attr('font-weight', '600')
         .selectAll('text')
         .data(I)
         .join('text')
-        .attr('x', (i) => xScale(X[i]))
+        .attr('x', xScale(0))
         .attr('y', (i) => yScale(Y[i]) + yScale.bandwidth() / 2)
         .attr('dy', '0.35em')
-        .attr('dx', -4)
+        .attr('dx', 5)
         .text(title)
         .call((text) =>
             text
@@ -172,7 +174,7 @@ function BarChart(
 
     svg.append('g').attr('transform', `translate(${marginLeft},0)`).call(yAxis)
 
-    var lgndSize = 20
+    var lgndSize = 18
     const legend = svg.append('g').attr('transform', `translate(-60,250)`)
 
     // Create color legend
@@ -516,7 +518,7 @@ function StackedBarChart(
 
     if (title) bar.append('title').text(({i}) => title(i))
 
-    var lgndSize = 20
+    var lgndSize = 16
     const legend = svg.append('g').attr('transform', `translate(-60,-80)`)
 
     // Create color legend
