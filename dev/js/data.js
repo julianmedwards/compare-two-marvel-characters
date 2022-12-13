@@ -68,7 +68,8 @@ function getCreditCountData(actor1, actor2, marvelItems) {
         marvelItems
     )
 
-    return [
+    const credits = {}
+    credits.movies = [
         {
             actor: actor1.name,
             count: actor1Credits.movieStd,
@@ -80,16 +81,6 @@ function getCreditCountData(actor1, actor2, marvelItems) {
             type: 'Marvel Movies',
         },
         {
-            actor: actor1.name,
-            count: actor1Credits.tvStd,
-            type: 'TV Roles',
-        },
-        {
-            actor: actor1.name,
-            count: actor1Credits.tvMrvl,
-            type: 'Marvel Series',
-        },
-        {
             actor: actor2.name,
             count: actor2Credits.movieStd,
             type: 'Movie Roles',
@@ -99,6 +90,19 @@ function getCreditCountData(actor1, actor2, marvelItems) {
             count: actor2Credits.movieMrvl,
             type: 'Marvel Movies',
         },
+    ]
+    credits.series = [
+        {
+            actor: actor1.name,
+            count: actor1Credits.tvStd,
+            type: 'TV Roles',
+        },
+        {
+            actor: actor1.name,
+            count: actor1Credits.tvMrvl,
+            type: 'Marvel Series',
+        },
+
         {
             actor: actor2.name,
             count: actor2Credits.tvStd,
@@ -110,6 +114,8 @@ function getCreditCountData(actor1, actor2, marvelItems) {
             type: 'Marvel Series',
         },
     ]
+
+    return credits
 }
 
 function separateMarvelCredits(movieCredits, tvCredits, marvelItems) {

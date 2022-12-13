@@ -161,12 +161,15 @@ function buildWidgets(actors) {
     const rolePopChart = vis.buildRolePopWidget(actors)
     $('#role-pop .chart').append(rolePopChart)
 
-    const charts = vis.buildCreditTypeWidget(actors)
-    $('#credit-type .chart').first().append(charts[0])
-    $('#credit-type .chart').last().append(charts[1])
+    const creditTypeCharts = vis.buildCreditTypeWidget(actors)
+    $('#credit-type .chart').first().append(creditTypeCharts[0])
+    $('#credit-type .chart').last().append(creditTypeCharts[1])
 
-    const creditCountChart = vis.buildCreditCountWidget(actors)
-    $('#credit-count .chart').append(creditCountChart)
+    const creditCountCharts = vis.buildCreditCountWidget(actors)
+    $('#credit-count .chart').append(
+        creditCountCharts.movies,
+        creditCountCharts.series
+    )
     // $('#revenue.chart').append(vis.buildRevenueWidget(actors))
 }
 
