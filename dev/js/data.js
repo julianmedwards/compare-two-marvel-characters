@@ -148,9 +148,95 @@ function separateMarvelCredits(movieCredits, tvCredits, marvelItems) {
     }
 }
 
-function getRevenueData() {
-    const revenue = []
-    return revenue
+function getRevenueData(actors) {
+    let actor1Revenue = extractActorFilmRevenue(
+        actors.actor1.name,
+        actors.actor1.movie_credits.cast
+    )
+    let actor2Revenue = extractActorFilmRevenue(
+        actors.actor2.name,
+        actors.actor2.movie_credits.cast
+    )
+
+    let rawActorsRevenue = actor1Revenue.concat(actor2Revenue)
+
+    const combinedRevenue = rawActorsRevenue.reduce((acc, curr) => {
+        const {actor, date, revenue} = curr
+        const findObj = acc.find(
+            (o) => o.actor === actor && o.date.getTime() === date.getTime()
+        )
+        if (!findObj) {
+            acc.push(curr)
+        } else {
+            findObj.revenue += revenue
+        }
+        return acc
+    }, [])
+
+    const filledCombinedRevenue = assignDefaultValues(combinedRevenue, [
+        'Robert Downey Jr.',
+        'Benedict Cumberbatch',
+    ])
+
+    return filledCombinedRevenue
+}
+
+// Source:
+// https://stackoverflow.com/questions/14713503/how-to-handle-layers-with-missing-data-points-in-d3-layout-stack
+function assignDefaultValues(dataset, keys) {
+    var defaultValue = 0
+    var hadData = [true, true]
+    var newData = []
+    var previousdate = new Date()
+    var sortByDate = function (a, b) {
+        return a.date > b.date ? 1 : -1
+    }
+
+    dataset.sort(sortByDate)
+    dataset.forEach(function (row) {
+        if (row.date.valueOf() !== previousdate.valueOf()) {
+            for (var i = 0; i < keys.length; ++i) {
+                if (hadData[i] === false) {
+                    newData.push({
+                        date: previousdate,
+                        revenue: defaultValue,
+                        actor: keys[i],
+                    })
+                }
+                hadData[i] = false
+            }
+            previousdate = row.date
+        }
+        hadData[keys.indexOf(row.actor)] = true
+    })
+    for (var i = 0; i < keys.length; ++i) {
+        if (hadData[i] === false) {
+            newData.push({
+                date: previousdate,
+                revenue: defaultValue,
+                actor: keys[i],
+            })
+        }
+    }
+    return dataset.concat(newData).sort(sortByDate)
+}
+
+function extractActorFilmRevenue(actor, credits) {
+    return credits
+        .map((val) => {
+            if (val.release_date && val.vote_count) {
+                return {
+                    date: new Date(
+                        parseInt(val.release_date.substring(0, 4)),
+                        0,
+                        1
+                    ),
+                    revenue: val.vote_count,
+                    actor: actor,
+                }
+            }
+        })
+        .filter((el) => el !== undefined)
 }
 
 export const data = {
@@ -161,4 +247,5 @@ export const data = {
     getCreditCountData,
     separateMarvelCredits,
     getRevenueData,
+    extractActorFilmRevenue,
 }

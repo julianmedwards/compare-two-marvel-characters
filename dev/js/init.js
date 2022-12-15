@@ -151,10 +151,34 @@ function populatePageData(actors) {
     // Placeholder
     const completed = jq.$.Deferred()
 
+    init.injectOverviewInfo(actors)
+
     init.buildWidgets(actors)
     completed.resolve()
 
     return completed.promise()
+}
+
+// Information
+// Name
+// Picture
+// Birthday/Place
+
+function injectOverviewInfo(actors) {
+    $('#actor-1 .portrait').attr(
+        'src',
+        `https://image.tmdb.org/t/p/w500${actors.actor1.profile_path}`
+    )
+    $('#actor-2 .portrait').attr(
+        'src',
+        `https://image.tmdb.org/t/p/w500/${actors.actor2.profile_path}`
+    )
+
+    $('#actor-1 .name').text(actors.actor1.name)
+    $('#actor-2 .name').text(actors.actor2.name)
+
+    $('#actor-1 .dob').text(actors.actor1.birthday)
+    $('#actor-2 .dob').text(actors.actor2.birthday)
 }
 
 function buildWidgets(actors) {
@@ -170,7 +194,9 @@ function buildWidgets(actors) {
         creditCountCharts.movies,
         creditCountCharts.series
     )
-    // $('#revenue.chart').append(vis.buildRevenueWidget(actors))
+
+    const revenueChart = vis.buildRevenueWidget(actors)
+    $('#revenue .chart').append(revenueChart)
 }
 
 function initEventListeners() {
@@ -186,6 +212,7 @@ export const init = {
     requestAllPages,
     requestPage,
     populatePageData,
+    injectOverviewInfo,
     buildWidgets,
     initEventListeners,
     failLoad,

@@ -18,8 +18,37 @@
 main {
     display: flex;
     flex-wrap: nowrap;
+    flex-direction: column;
     justify-content: center;
     margin: 0rem var(--wrapper-width);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+#overview {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
+
+#actor-1 {
+    margin-right: 1em;
+}
+#actor-1 {
+    margin-left: 1em;
+}
+
+#actor-1 > div,
+#actor-2 > div {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
+
+#actor-1 .name {
+    text-align: end;
+}
+#actor-2 .name {
+    text-align: start;
 }
 
 #widgets {
@@ -55,7 +84,8 @@ main {
     width: 50%;
 }
 
-#credit-type {
+#credit-type,
+#revenue {
     flex: calc(100% - 1rem - var(--wrapper-width));
 }
 

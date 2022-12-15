@@ -4,11 +4,6 @@ import * as d3 from 'd3'
 
 import {data} from './data.js'
 
-// Information
-// Name
-// Picture
-// Birthday/Place
-
 // Widgets
 
 // 1: Compare most popular rolls, horizontal bar chart.
@@ -174,7 +169,7 @@ function BarChart(
 
     svg.append('g').attr('transform', `translate(${marginLeft},0)`).call(yAxis)
 
-    var lgndSize = 18
+    var lgndSize = 16
     const legend = svg.append('g').attr('transform', `translate(-60,250)`)
 
     // Create color legend
@@ -185,7 +180,7 @@ function BarChart(
         .append('rect')
         .attr('x', 100)
         .attr('y', function (d, i) {
-            return 100 + i * (lgndSize + 5)
+            return 100 + i * (lgndSize + 6)
         }) // 100 is where the first dot appears. 25 is the distance between dots
         .attr('width', lgndSize)
         .attr('height', lgndSize)
@@ -201,7 +196,7 @@ function BarChart(
         .append('text')
         .attr('x', 100 + lgndSize * 1.2)
         .attr('y', function (d, i) {
-            return 100 + i * (lgndSize + 5) + lgndSize / 2
+            return 100 + i * (lgndSize + 6) + lgndSize / 2
         }) // 100 is where the first dot appears. 25 is the distance between dots
         .style('fill', function (d) {
             return 'black'
@@ -211,6 +206,7 @@ function BarChart(
         })
         .attr('text-anchor', 'left')
         .style('alignment-baseline', 'middle')
+        .attr('font-size', lgndSize)
 
     return svg.node()
 }
@@ -331,7 +327,7 @@ function PieChart(
         })
         .join('tspan')
         .attr('x', 0)
-        .attr('y', (_, i) => `${i * 1.1}em`)
+        .attr('y', (_, i) => `${i * 1.2}em`)
         .attr('font-weight', (_, i) => (i ? null : 'bold'))
         .text((d) => d)
 
@@ -518,7 +514,7 @@ function StackedBarChart(
 
     if (title) bar.append('title').text(({i}) => title(i))
 
-    var lgndSize = 16
+    var lgndSize = 14
     const legend = svg.append('g').attr('transform', `translate(-60,-80)`)
 
     // Create color legend
@@ -529,7 +525,7 @@ function StackedBarChart(
         .append('rect')
         .attr('x', 100)
         .attr('y', function (d, i) {
-            return 100 + i * (lgndSize + 5)
+            return 100 + i * (lgndSize + 6)
         }) // 100 is where the first dot appears. 25 is the distance between dots
         .attr('width', lgndSize)
         .attr('height', lgndSize)
@@ -545,7 +541,7 @@ function StackedBarChart(
         .append('text')
         .attr('x', 100 + lgndSize * 1.2)
         .attr('y', function (d, i) {
-            return 100 + i * (lgndSize + 5) + lgndSize / 2
+            return 100 + i * (lgndSize + 6) + lgndSize / 2
         }) // 100 is where the first dot appears. 25 is the distance between dots
         .style('fill', function (d) {
             return 'black'
@@ -555,6 +551,7 @@ function StackedBarChart(
         })
         .attr('text-anchor', 'left')
         .style('alignment-baseline', 'middle')
+        .attr('font-size', lgndSize)
 
     svg.append('g')
         .attr('transform', `translate(0,${yScale(0)})`)
@@ -566,7 +563,171 @@ function StackedBarChart(
 // 4: Revenue of movies by year, stacked area/bar chart
 // TV vs Movie?
 function buildRevenueWidget(actors) {
-    const revenue = data.getRevenueData(actors)
+    const revenueData = data.getRevenueData(actors)
+
+    // const revenueData = [
+    //     {date: new Date(2000, 0, 1), revenue: 100, actor: '1'},
+    //     {date: new Date(2000, 0, 1), revenue: 100, actor: '2'},
+    //     {date: new Date(2001, 0, 1), revenue: 100, actor: '1'},
+    //     {date: new Date(2001, 0, 1), revenue: 100, actor: '2'},
+    //     {date: new Date(2002, 0, 1), revenue: 100, actor: '1'},
+    //     {date: new Date(2002, 0, 1), revenue: 100, actor: '2'},
+    //     {date: new Date(2003, 0, 1), revenue: 100, actor: '1'},
+    //     {date: new Date(2003, 0, 1), revenue: 100, actor: '2'},
+    //     {date: new Date(2004, 0, 1), revenue: 100, actor: '1'},
+    //     {date: new Date(2004, 0, 1), revenue: 100, actor: '2'},
+    //     {date: new Date(2005, 0, 1), revenue: 100, actor: '1'},
+    //     {date: new Date(2005, 0, 1), revenue: 100, actor: '2'},
+    //     {date: new Date(2006, 0, 1), revenue: 100, actor: '1'},
+    //     {date: new Date(2006, 0, 1), revenue: 100, actor: '2'},
+    //     {date: new Date(2007, 0, 1), revenue: 100, actor: '1'},
+    //     {date: new Date(2007, 0, 1), revenue: 100, actor: '2'},
+    //     {date: new Date(2008, 0, 1), revenue: 100, actor: '1'},
+    //     {date: new Date(2008, 0, 1), revenue: 100, actor: '2'},
+    //     {date: new Date(2009, 0, 1), revenue: 100, actor: '1'},
+    //     {date: new Date(2009, 0, 1), revenue: 100, actor: '2'},
+    // ]
+
+    console.dir(revenueData)
+
+    return StackedAreaChart(revenueData, {
+        x: (d) => d.date,
+        y: (d) => d.revenue,
+        z: (d) => d.actor,
+        yLabel: '↑ Film Revenue',
+        width: 1200,
+        height: 500,
+        xTickFrequency: 5,
+    })
+}
+
+// Copyright 2021 Observable, Inc.
+// Released under the ISC license.
+// https://observablehq.com/@d3/stacked-area-chart
+// Modified by Julian Edwards.
+function StackedAreaChart(
+    data,
+    {
+        x = ([x]) => x, // given d in data, returns the (ordinal) x-value
+        y = ([, y]) => y, // given d in data, returns the (quantitative) y-value
+        z = () => 1, // given d in data, returns the (categorical) z-value
+        marginTop = 20, // top margin, in pixels
+        marginRight = 30, // right margin, in pixels
+        marginBottom = 30, // bottom margin, in pixels
+        marginLeft = 40, // left margin, in pixels
+        width = 640, // outer width, in pixels
+        height = 400, // outer height, in pixels
+        xType = d3.scaleUtc, // type of x-scale
+        xDomain, // [xmin, xmax]
+        xRange = [marginLeft, width - marginRight], // [left, right]
+        xTickFrequency, // Number of data points per tick
+        yType = d3.scaleLinear, // type of y-scale
+        yDomain, // [ymin, ymax]
+        yRange = [height - marginBottom, marginTop], // [bottom, top]
+        zDomain, // array of z-values
+        offset = d3.stackOffsetDiverging, // stack offset method
+        order = d3.stackOrderNone, // stack order method
+        xFormat, // a format specifier string for the x-axis
+        yFormat, // a format specifier for the y-axis
+        yLabel, // a label for the y-axis
+        colors = d3.schemeTableau10, // array of colors for z
+    } = {}
+) {
+    // Compute values.
+    const X = d3.map(data, x)
+    const Y = d3.map(data, y)
+    const Z = d3.map(data, z)
+
+    // Compute default x- and z-domains, and unique the z-domain.
+    if (xDomain === undefined) xDomain = d3.extent(X)
+    if (zDomain === undefined) zDomain = Z
+    zDomain = new d3.InternSet(zDomain)
+
+    // Omit any data not present in the z-domain.
+    const I = d3.range(X.length).filter((i) => zDomain.has(Z[i]))
+
+    // Compute a nested array of series where each series is [[y1, y2], [y1, y2],
+    // [y1, y2], …] representing the y-extent of each stacked rect. In addition,
+    // each tuple has an i (index) property so that we can refer back to the
+    // original data point (data[i]). This code assumes that there is only one
+    // data point for a given unique x- and z-value.
+    const series = d3
+        .stack()
+        .keys(zDomain)
+        .value(([x, I], z) => Y[I.get(z)])
+        .order(order)
+        .offset(offset)(
+            d3.rollup(
+                I,
+                ([i]) => i,
+                (i) => X[i],
+                (i) => Z[i]
+            )
+        )
+        .map((s) => s.map((d) => Object.assign(d, {i: d.data[1].get(s.key)})))
+
+    // Compute the default y-domain. Note: diverging stacks can be negative.
+    if (yDomain === undefined) yDomain = d3.extent(series.flat(2))
+
+    // Construct scales and axes.
+    const xScale = xType(xDomain, xRange)
+    const yScale = yType(yDomain, yRange)
+    const color = d3.scaleOrdinal(zDomain, colors)
+    const xAxis = d3
+        .axisBottom(xScale)
+        .ticks(d3.timeYear.every(xTickFrequency))
+        .tickSizeOuter(0)
+        .tickFormat(d3.timeFormat('%Y'))
+    const yAxis = d3.axisLeft(yScale).ticks(height / 50, yFormat)
+
+    const area = d3
+        .area()
+        .x(({i}) => xScale(X[i]))
+        .y0(([y1]) => yScale(y1))
+        .y1(([, y2]) => yScale(y2))
+
+    const svg = d3
+        .create('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .attr('viewBox', [0, 0, width, height])
+        .attr('style', 'max-width: 100%; height: auto; height: intrinsic;')
+
+    svg.append('g')
+        .attr('transform', `translate(${marginLeft},0)`)
+        .call(yAxis)
+        .call((g) => g.select('.domain').remove())
+        .call((g) =>
+            g
+                .selectAll('.tick line')
+                .clone()
+                .attr('x2', width - marginLeft - marginRight)
+                .attr('stroke-opacity', 0.1)
+        )
+        .call((g) =>
+            g
+                .append('text')
+                .attr('x', -marginLeft)
+                .attr('y', 10)
+                .attr('fill', 'currentColor')
+                .attr('text-anchor', 'start')
+                .text(yLabel)
+        )
+
+    svg.append('g')
+        .selectAll('path')
+        .data(series)
+        .join('path')
+        .attr('fill', ([{i}]) => color(Z[i]))
+        .attr('d', area)
+        .append('title')
+        .text(([{i}]) => Z[i])
+
+    svg.append('g')
+        .attr('transform', `translate(0,${height - marginBottom})`)
+        .call(xAxis)
+
+    return Object.assign(svg.node(), {scales: {color}})
 }
 
 export const vis = {
@@ -577,6 +738,7 @@ export const vis = {
     PieChart,
     BarChart,
     StackedBarChart,
+    StackedAreaChart,
 }
 
 export const d = {
