@@ -1,6 +1,7 @@
 'use strict'
 
 import * as d3 from 'd3'
+import {isArray} from 'jquery'
 
 import {data} from './data.js'
 
@@ -565,52 +566,33 @@ function StackedBarChart(
 function buildRevenueWidget(actors) {
     const revenueData = data.getRevenueData(actors)
 
-    // const revenueData = [
-    //     {date: new Date(2000, 0, 1), revenue: 100, actor: '1'},
-    //     {date: new Date(2000, 0, 1), revenue: 100, actor: '2'},
-    //     {date: new Date(2001, 0, 1), revenue: 100, actor: '1'},
-    //     {date: new Date(2001, 0, 1), revenue: 100, actor: '2'},
-    //     {date: new Date(2002, 0, 1), revenue: 100, actor: '1'},
-    //     {date: new Date(2002, 0, 1), revenue: 100, actor: '2'},
-    //     {date: new Date(2003, 0, 1), revenue: 100, actor: '1'},
-    //     {date: new Date(2003, 0, 1), revenue: 100, actor: '2'},
-    //     {date: new Date(2004, 0, 1), revenue: 100, actor: '1'},
-    //     {date: new Date(2004, 0, 1), revenue: 100, actor: '2'},
-    //     {date: new Date(2005, 0, 1), revenue: 100, actor: '1'},
-    //     {date: new Date(2005, 0, 1), revenue: 100, actor: '2'},
-    //     {date: new Date(2006, 0, 1), revenue: 100, actor: '1'},
-    //     {date: new Date(2006, 0, 1), revenue: 100, actor: '2'},
-    //     {date: new Date(2007, 0, 1), revenue: 100, actor: '1'},
-    //     {date: new Date(2007, 0, 1), revenue: 100, actor: '2'},
-    //     {date: new Date(2008, 0, 1), revenue: 100, actor: '1'},
-    //     {date: new Date(2008, 0, 1), revenue: 100, actor: '2'},
-    //     {date: new Date(2009, 0, 1), revenue: 100, actor: '1'},
-    //     {date: new Date(2009, 0, 1), revenue: 100, actor: '2'},
-    // ]
-
     console.dir(revenueData)
 
-    return StackedAreaChart(revenueData, {
+    return vis.LineChart(revenueData, {
         x: (d) => d.date,
         y: (d) => d.revenue,
         z: (d) => d.actor,
+        title: (d) => d.titles,
         yLabel: '↑ Film Revenue',
         width: 1200,
         height: 500,
-        xTickFrequency: 5,
+        yFormat: d3.format('~s'),
     })
 }
 
 // Copyright 2021 Observable, Inc.
 // Released under the ISC license.
-// https://observablehq.com/@d3/stacked-area-chart
+// https://observablehq.com/@d3/multi-line-chart
 // Modified by Julian Edwards.
-function StackedAreaChart(
+function LineChart(
     data,
     {
-        x = ([x]) => x, // given d in data, returns the (ordinal) x-value
+        x = ([x]) => x, // given d in data, returns the (temporal) x-value
         y = ([, y]) => y, // given d in data, returns the (quantitative) y-value
         z = () => 1, // given d in data, returns the (categorical) z-value
+        title, // given d in data, returns the title text
+        defined, // for gaps in data
+        curve = d3.curveLinear, // method of interpolation between points
         marginTop = 20, // top margin, in pixels
         marginRight = 30, // right margin, in pixels
         marginBottom = 30, // bottom margin, in pixels
@@ -620,16 +602,18 @@ function StackedAreaChart(
         xType = d3.scaleUtc, // type of x-scale
         xDomain, // [xmin, xmax]
         xRange = [marginLeft, width - marginRight], // [left, right]
-        xTickFrequency, // Number of data points per tick
         yType = d3.scaleLinear, // type of y-scale
         yDomain, // [ymin, ymax]
         yRange = [height - marginBottom, marginTop], // [bottom, top]
-        zDomain, // array of z-values
-        offset = d3.stackOffsetDiverging, // stack offset method
-        order = d3.stackOrderNone, // stack order method
-        xFormat, // a format specifier string for the x-axis
-        yFormat, // a format specifier for the y-axis
+        yFormat, // a format specifier string for the y-axis
         yLabel, // a label for the y-axis
+        zDomain, // array of z-values
+        strokeLinecap, // stroke line cap of line
+        strokeLinejoin, // stroke line join of line
+        strokeWidth = 1.5, // stroke width of line
+        strokeOpacity, // stroke opacity of line
+        mixBlendMode = 'multiply', // blend mode of lines
+        voronoi, // show a Voronoi overlay? (for debugging)
         colors = d3.schemeTableau10, // array of colors for z
     } = {}
 ) {
@@ -637,37 +621,19 @@ function StackedAreaChart(
     const X = d3.map(data, x)
     const Y = d3.map(data, y)
     const Z = d3.map(data, z)
+    const O = d3.map(data, (d) => d)
+    if (defined === undefined) defined = (d, i) => !isNaN(X[i]) && !isNaN(Y[i])
+    const D = d3.map(data, defined)
 
-    // Compute default x- and z-domains, and unique the z-domain.
+    // Compute default domains, and unique the z-domain.
     if (xDomain === undefined) xDomain = d3.extent(X)
+    if (yDomain === undefined)
+        yDomain = [0, d3.max(Y, (d) => (typeof d === 'string' ? +d : d))]
     if (zDomain === undefined) zDomain = Z
     zDomain = new d3.InternSet(zDomain)
 
     // Omit any data not present in the z-domain.
     const I = d3.range(X.length).filter((i) => zDomain.has(Z[i]))
-
-    // Compute a nested array of series where each series is [[y1, y2], [y1, y2],
-    // [y1, y2], …] representing the y-extent of each stacked rect. In addition,
-    // each tuple has an i (index) property so that we can refer back to the
-    // original data point (data[i]). This code assumes that there is only one
-    // data point for a given unique x- and z-value.
-    const series = d3
-        .stack()
-        .keys(zDomain)
-        .value(([x, I], z) => Y[I.get(z)])
-        .order(order)
-        .offset(offset)(
-            d3.rollup(
-                I,
-                ([i]) => i,
-                (i) => X[i],
-                (i) => Z[i]
-            )
-        )
-        .map((s) => s.map((d) => Object.assign(d, {i: d.data[1].get(s.key)})))
-
-    // Compute the default y-domain. Note: diverging stacks can be negative.
-    if (yDomain === undefined) yDomain = d3.extent(series.flat(2))
 
     // Construct scales and axes.
     const xScale = xType(xDomain, xRange)
@@ -675,16 +641,21 @@ function StackedAreaChart(
     const color = d3.scaleOrdinal(zDomain, colors)
     const xAxis = d3
         .axisBottom(xScale)
-        .ticks(d3.timeYear.every(xTickFrequency))
+        .ticks(width / 80)
         .tickSizeOuter(0)
-        .tickFormat(d3.timeFormat('%Y'))
-    const yAxis = d3.axisLeft(yScale).ticks(height / 50, yFormat)
+    const yAxis = d3.axisLeft(yScale).ticks(height / 60, yFormat)
 
-    const area = d3
-        .area()
-        .x(({i}) => xScale(X[i]))
-        .y0(([y1]) => yScale(y1))
-        .y1(([, y2]) => yScale(y2))
+    // Compute titles.
+    const T =
+        title === undefined ? Z : title === null ? null : d3.map(data, title)
+
+    // Construct a line generator.
+    const line = d3
+        .line()
+        .defined((i) => D[i])
+        .curve(curve)
+        .x((i) => xScale(X[i]))
+        .y((i) => yScale(Y[i]))
 
     const svg = d3
         .create('svg')
@@ -692,17 +663,45 @@ function StackedAreaChart(
         .attr('height', height)
         .attr('viewBox', [0, 0, width, height])
         .attr('style', 'max-width: 100%; height: auto; height: intrinsic;')
+        .style('-webkit-tap-highlight-color', 'transparent')
+        .on('pointerenter', pointerentered)
+        .on('pointermove', pointermoved)
+        .on('pointerleave', pointerleft)
+        .on('touchstart', (event) => event.preventDefault())
+
+    // An optional Voronoi display (for fun).
+    if (voronoi)
+        svg.append('path')
+            .attr('fill', 'none')
+            .attr('stroke', '#ccc')
+            .attr(
+                'd',
+                d3.Delaunay.from(
+                    I,
+                    (i) => xScale(X[i]),
+                    (i) => yScale(Y[i])
+                )
+                    .voronoi([0, 0, width, height])
+                    .render()
+            )
+
+    svg.append('g')
+        .attr('transform', `translate(0,${height - marginBottom})`)
+        .call(xAxis)
 
     svg.append('g')
         .attr('transform', `translate(${marginLeft},0)`)
         .call(yAxis)
         .call((g) => g.select('.domain').remove())
-        .call((g) =>
-            g
-                .selectAll('.tick line')
-                .clone()
-                .attr('x2', width - marginLeft - marginRight)
-                .attr('stroke-opacity', 0.1)
+        .call(
+            voronoi
+                ? () => {}
+                : (g) =>
+                      g
+                          .selectAll('.tick line')
+                          .clone()
+                          .attr('x2', width - marginLeft - marginRight)
+                          .attr('stroke-opacity', 0.1)
         )
         .call((g) =>
             g
@@ -714,20 +713,78 @@ function StackedAreaChart(
                 .text(yLabel)
         )
 
-    svg.append('g')
+    const path = svg
+        .append('g')
+        .attr('fill', 'none')
+        .attr('stroke', typeof color === 'string' ? color : null)
+        .attr('stroke-linecap', strokeLinecap)
+        .attr('stroke-linejoin', strokeLinejoin)
+        .attr('stroke-width', strokeWidth)
+        .attr('stroke-opacity', strokeOpacity)
         .selectAll('path')
-        .data(series)
+        .data(d3.group(I, (i) => Z[i]))
         .join('path')
-        .attr('fill', ([{i}]) => color(Z[i]))
-        .attr('d', area)
-        .append('title')
-        .text(([{i}]) => Z[i])
+        .style('mix-blend-mode', mixBlendMode)
+        .attr('stroke', typeof color === 'function' ? ([z]) => color(z) : null)
+        .attr('d', ([, I]) => line(I))
 
-    svg.append('g')
-        .attr('transform', `translate(0,${height - marginBottom})`)
-        .call(xAxis)
+    const dot = svg.append('g').attr('display', 'none')
 
-    return Object.assign(svg.node(), {scales: {color}})
+    dot.append('circle').attr('r', 2.5)
+
+    dot.append('text')
+        .attr('font-family', 'sans-serif')
+        .attr('font-size', 10)
+        .attr('text-anchor', 'middle')
+        .attr('y', -8)
+
+    function pointermoved(event) {
+        const [xm, ym] = d3.pointer(event)
+        const i = d3.least(I, (i) =>
+            Math.hypot(xScale(X[i]) - xm, yScale(Y[i]) - ym)
+        ) // closest point
+        path.style('stroke', ([z]) => (Z[i] === z ? null : '#ddd'))
+            .filter(([z]) => Z[i] === z)
+            .raise()
+        dot.attr('transform', `translate(${xScale(X[i])},${yScale(Y[i])})`)
+        if (T) {
+            let titlesText = T[i]
+            if (Array.isArray(titlesText)) {
+                titlesText = titlesText.join('; ')
+            }
+            dot.select('text').text(titlesText)
+        }
+        let chartRect = svg.select('g').node().getBBox()
+        let titleRect = dot.select('text').node().getBBox()
+        if (
+            xScale(X[i]) + titleRect.width / 2 >
+            chartRect.x + chartRect.width
+        ) {
+            dot.select('text').attr(
+                'x',
+                (xScale(X[i]) +
+                    titleRect.width / 2 -
+                    (chartRect.x + chartRect.width)) *
+                    -1
+            )
+        }
+
+        svg.property('value', O[i]).dispatch('input', {bubbles: true})
+    }
+
+    function pointerentered() {
+        path.style('mix-blend-mode', null).style('stroke', '#ddd')
+        dot.attr('display', null)
+    }
+
+    function pointerleft() {
+        path.style('mix-blend-mode', mixBlendMode).style('stroke', null)
+        dot.attr('display', 'none')
+        svg.node().value = null
+        svg.dispatch('input', {bubbles: true})
+    }
+
+    return Object.assign(svg.node(), {value: null})
 }
 
 export const vis = {
@@ -738,37 +795,9 @@ export const vis = {
     PieChart,
     BarChart,
     StackedBarChart,
-    StackedAreaChart,
+    LineChart,
 }
 
 export const d = {
     d3,
 }
-
-// function updatePieChart(data) {
-//     // Compute the position of each group on the pie:
-//     const pie = d3
-//         .pie()
-//         .value(function (d) {
-//             return d[1]
-//         })
-//         .sort(function (a, b) {
-//             return d3.ascending(a.key, b.key)
-//         }) // This make sure that group order remains the same in the pie chart
-//     const data_ready = pie(Object.entries(data))
-
-//     // map to data
-//     const u = svg.selectAll('path').data(data_ready)
-
-//     // Build the pie chart: Basically, each part of the pie is a path that we build using the arc function.
-//     u.join('path')
-//         .transition()
-//         .duration(1000)
-//         .attr('d', d3.arc().innerRadius(0).outerRadius(radius))
-//         .attr('fill', function (d) {
-//             return color(d.data[0])
-//         })
-//         .attr('stroke', 'white')
-//         .style('stroke-width', '2px')
-//         .style('opacity', 1)
-// }

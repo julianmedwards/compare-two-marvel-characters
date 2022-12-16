@@ -9,12 +9,7 @@ function initialize() {
         let actor1 = '3223'
         let actor2 = '71580'
         let mcuKeyword = '180547'
-        const actorRequest = init.retrieveActorData(
-            API,
-            actor1,
-            actor2,
-            mcuKeyword
-        )
+        const actorRequest = init.retrieveData(API, actor1, actor2, mcuKeyword)
         actorRequest
             .done((actors) => {
                 console.log(actors)
@@ -65,15 +60,12 @@ function retrieveAPIKeys() {
     return request.promise()
 }
 
-function retrieveActorData(API, actor1, actor2, keyword) {
+function retrieveData(API, actor1, actor2, keyword) {
     const completed = jq.$.Deferred()
 
-    const getActor1 = init.tmdbRequest(
-        `https://api.themoviedb.org/3/person/${actor1}?api_key=${API.key}&append_to_response=movie_credits,tv_credits`
-    )
-    const getActor2 = init.tmdbRequest(
-        `https://api.themoviedb.org/3/person/${actor2}?api_key=${API.key}&append_to_response=movie_credits,tv_credits`
-    )
+    const getActor1 = init.retrieveActorData(API, actor1)
+    const getActor2 = init.retrieveActorData(API, actor2)
+
     const getMarvelItems = init.retrieveMarvelItems(API, keyword)
 
     jq.$.when(getActor1, getActor2, getMarvelItems)
@@ -87,6 +79,50 @@ function retrieveActorData(API, actor1, actor2, keyword) {
         .fail(() => {
             completed.reject()
         })
+
+    return completed.promise()
+}
+
+function retrieveActorData(API, actor) {
+    const completed = jq.$.Deferred()
+
+    const getMainData = init.tmdbRequest(
+        `https://api.themoviedb.org/3/person/${actor}?api_key=${API.key}&append_to_response=movie_credits,tv_credits`
+    )
+
+    getMainData.done((actorData) => {
+        init.retrieveCreditMovieRevenue(API, actorData)
+            .done((actorAndRevenueData) => {
+                completed.resolve(actorAndRevenueData)
+            })
+            .fail((err) => {
+                completed.reject(err)
+            })
+    })
+
+    return completed.promise()
+}
+
+function retrieveCreditMovieRevenue(API, actor) {
+    const completed = jq.$.Deferred()
+
+    const credits = actor.movie_credits.cast
+    for (let i = 0; i < credits.length; i++) {
+        init.tmdbRequest(
+            `https://api.themoviedb.org/3/movie/${credits[i].id}?api_key=${API.key}`
+        )
+            .done((movieData) => {
+                credits[i].revenue = movieData.revenue
+            })
+            .fail((err) => {
+                console.err(err)
+                console.error("Couldn't retrieve revenue for film credit.")
+                credits[i].revenue = null
+            })
+        if (i === credits.length - 1) {
+            completed.resolve(actor)
+        }
+    }
 
     return completed.promise()
 }
@@ -207,7 +243,9 @@ export const init = {
     initialize,
     tmdbRequest,
     retrieveAPIKeys,
+    retrieveData,
     retrieveActorData,
+    retrieveCreditMovieRevenue,
     retrieveMarvelItems,
     requestAllPages,
     requestPage,

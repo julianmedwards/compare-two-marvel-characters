@@ -149,19 +149,22 @@ function separateMarvelCredits(movieCredits, tvCredits, marvelItems) {
 }
 
 function getRevenueData(actors) {
-    let actor1Revenue = extractActorFilmRevenue(
+    let actor1Revenue = data.extractActorFilmRevenue(
         actors.actor1.name,
         actors.actor1.movie_credits.cast
     )
-    let actor2Revenue = extractActorFilmRevenue(
+    let actor2Revenue = data.extractActorFilmRevenue(
         actors.actor2.name,
         actors.actor2.movie_credits.cast
     )
 
     let rawActorsRevenue = actor1Revenue.concat(actor2Revenue)
 
-    const combinedRevenue = rawActorsRevenue.reduce((acc, curr) => {
-        const {actor, date, revenue} = curr
+    // const costarringCombinedRevenue =
+    //     data.combineCostarringRevenue(rawActorsRevenue)
+
+    const yearlyCombinedRevenue = rawActorsRevenue.reduce((acc, curr) => {
+        const {actor, date, revenue, titles} = curr
         const findObj = acc.find(
             (o) => o.actor === actor && o.date.getTime() === date.getTime()
         )
@@ -169,23 +172,72 @@ function getRevenueData(actors) {
             acc.push(curr)
         } else {
             findObj.revenue += revenue
+            for (let title of titles) {
+                if (!findObj.titles.includes(title)) {
+                    findObj.titles.push(title)
+                }
+            }
         }
         return acc
     }, [])
 
-    const filledCombinedRevenue = assignDefaultValues(combinedRevenue, [
+    const finishedRevenue = data.assignDefaultValues(yearlyCombinedRevenue, [
         'Robert Downey Jr.',
         'Benedict Cumberbatch',
+        // 'Both',
     ])
 
-    return filledCombinedRevenue
+    return finishedRevenue
 }
+
+function extractActorFilmRevenue(actor, credits) {
+    return credits
+        .map((val) => {
+            if (val.release_date && val.revenue) {
+                return {
+                    date: new Date(
+                        parseInt(val.release_date.substring(0, 4)),
+                        0,
+                        1
+                    ),
+                    revenue: val.revenue,
+                    actor: actor,
+                    id: val.id,
+                    titles: [val.title],
+                }
+            }
+        })
+        .filter((el) => el !== undefined)
+}
+
+// function combineCostarringRevenue(revenue, combined = []) {
+//     if (revenue.length > 0) {
+//         const current = revenue.shift()
+//         const otherActor = revenue.find((o) => o.id === current.id)
+//         if (otherActor) {
+//             revenue.splice(revenue.indexOf(otherActor), 1)
+//             combined.push({
+//                 date: current.date,
+//                 revenue: current.revenue,
+//                 actor: 'Both',
+//                 id: current.id,
+//                 titles: current.titles
+//             })
+//         } else {
+//             combined.push(current)
+//         }
+//         return data.combineCostarringRevenue(revenue, combined)
+//     } else {
+//         return combined
+//     }
+// }
 
 // Source:
 // https://stackoverflow.com/questions/14713503/how-to-handle-layers-with-missing-data-points-in-d3-layout-stack
 function assignDefaultValues(dataset, keys) {
-    var defaultValue = 0
-    var hadData = [true, true]
+    var defaultRevenue = 0
+    var defaultId = null
+    var hadData = [true, true, true]
     var newData = []
     var previousdate = new Date()
     var sortByDate = function (a, b) {
@@ -199,8 +251,9 @@ function assignDefaultValues(dataset, keys) {
                 if (hadData[i] === false) {
                     newData.push({
                         date: previousdate,
-                        revenue: defaultValue,
+                        revenue: defaultRevenue,
                         actor: keys[i],
+                        id: defaultId,
                     })
                 }
                 hadData[i] = false
@@ -213,30 +266,13 @@ function assignDefaultValues(dataset, keys) {
         if (hadData[i] === false) {
             newData.push({
                 date: previousdate,
-                revenue: defaultValue,
+                revenue: defaultRevenue,
                 actor: keys[i],
+                id: defaultId,
             })
         }
     }
     return dataset.concat(newData).sort(sortByDate)
-}
-
-function extractActorFilmRevenue(actor, credits) {
-    return credits
-        .map((val) => {
-            if (val.release_date && val.vote_count) {
-                return {
-                    date: new Date(
-                        parseInt(val.release_date.substring(0, 4)),
-                        0,
-                        1
-                    ),
-                    revenue: val.vote_count,
-                    actor: actor,
-                }
-            }
-        })
-        .filter((el) => el !== undefined)
 }
 
 export const data = {
@@ -248,4 +284,6 @@ export const data = {
     separateMarvelCredits,
     getRevenueData,
     extractActorFilmRevenue,
+    // combineCostarringRevenue,
+    assignDefaultValues,
 }
