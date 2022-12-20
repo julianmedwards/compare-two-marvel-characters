@@ -1,7 +1,6 @@
 'use strict'
 
 import * as d3 from 'd3'
-import {isArray} from 'jquery'
 
 import {data} from './data.js'
 
@@ -29,7 +28,7 @@ function buildRolePopWidget(actors) {
             (d) => d.character
         ), // sort by descending frequency
         xLabel: 'Popularity Score →',
-        width: 600,
+        width: 800,
         colorSet: ['#518cca', '#f78f3f'],
     })
 }
@@ -45,7 +44,7 @@ function BarChart(
         y = (d, i) => i, // given d in data, returns the (ordinal) y-value
         srcs = [], // Sources/categories of datasets
         title, // given d in data, returns the title text
-        marginTop = 30, // the top margin, in pixels
+        marginTop = 30 + 40, // the top margin, in pixels
         marginRight = 0, // the right margin, in pixels
         marginBottom = 60, // the bottom margin, in pixels
         marginLeft = 200, // the left margin, in pixels
@@ -76,15 +75,10 @@ function BarChart(
     // Omit any data not present in the y-domain.
     const I = d3.range(X.length).filter((i) => yDomain.has(Y[i]))
 
-    const legendHeight = 50
-
     // Compute the default height.
     if (height === undefined)
         height =
-            Math.ceil((yDomain.size + yPadding) * 25) +
-            marginTop +
-            marginBottom +
-            legendHeight
+            Math.ceil((yDomain.size + yPadding) * 25) + marginTop + marginBottom
     if (yRange === undefined) yRange = [marginTop, height - marginBottom]
 
     // Construct scales and axes.
@@ -171,7 +165,7 @@ function BarChart(
     svg.append('g').attr('transform', `translate(${marginLeft},0)`).call(yAxis)
 
     var lgndSize = 16
-    const legend = svg.append('g').attr('transform', `translate(-60,250)`)
+    const legend = svg.append('g').attr('transform', `translate(-60,-90)`)
 
     // Create color legend
     const dots = legend
@@ -767,6 +761,8 @@ function LineChart(
                     (chartRect.x + chartRect.width)) *
                     -1
             )
+        } else {
+            dot.select('text').attr('x', '')
         }
 
         svg.property('value', O[i]).dispatch('input', {bubbles: true})

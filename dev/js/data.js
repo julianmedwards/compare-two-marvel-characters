@@ -1,7 +1,5 @@
 'use strict'
 
-import {count} from 'd3'
-
 function getPopularRolesData(actor) {
     let roles = actor.movie_credits.cast
     roles.sort(data.compareActorPopularity)
@@ -153,35 +151,27 @@ function getRevenueData(actors) {
         actors.actor1.name,
         actors.actor1.movie_credits.cast
     )
+    actor1Revenue = data.combineYearlyFilmCredits(actor1Revenue)
+
     let actor2Revenue = data.extractActorFilmRevenue(
         actors.actor2.name,
         actors.actor2.movie_credits.cast
     )
+    actor2Revenue = data.combineYearlyFilmCredits(actor2Revenue)
 
-    let rawActorsRevenue = actor1Revenue.concat(actor2Revenue)
+    const actor1Range = data.getFilmCreditRange(actor1Revenue)
+    const actor2Range = data.getFilmCreditRange(actor2Revenue)
+
+    // Fill all years in range of both actor's careers with no credits.
+    actor1Revenue = data.fillEmptyDates(actor1Revenue, actor1Range, actor2Range)
+
+    let combinedActorRevenue = actor1Revenue.concat(actor2Revenue)
 
     // const costarringCombinedRevenue =
     //     data.combineCostarringRevenue(rawActorsRevenue)
 
-    const yearlyCombinedRevenue = rawActorsRevenue.reduce((acc, curr) => {
-        const {actor, date, revenue, titles} = curr
-        const findObj = acc.find(
-            (o) => o.actor === actor && o.date.getTime() === date.getTime()
-        )
-        if (!findObj) {
-            acc.push(curr)
-        } else {
-            findObj.revenue += revenue
-            for (let title of titles) {
-                if (!findObj.titles.includes(title)) {
-                    findObj.titles.push(title)
-                }
-            }
-        }
-        return acc
-    }, [])
-
-    const finishedRevenue = data.assignDefaultValues(yearlyCombinedRevenue, [
+    // Assign default (0 revenue) values for each actor in all empty dates.
+    const finishedRevenue = data.assignDefaultValues(combinedActorRevenue, [
         'Robert Downey Jr.',
         'Benedict Cumberbatch',
         // 'Both',
@@ -208,6 +198,61 @@ function extractActorFilmRevenue(actor, credits) {
             }
         })
         .filter((el) => el !== undefined)
+}
+
+function combineYearlyFilmCredits(actorRevenue) {
+    return actorRevenue.reduce((acc, curr) => {
+        const {actor, date, revenue, titles} = curr
+        const findObj = acc.find((o) => o.date.getTime() === date.getTime())
+        if (!findObj) {
+            acc.push(curr)
+        } else {
+            findObj.revenue += revenue
+            for (let title of titles) {
+                if (!findObj.titles.includes(title)) {
+                    findObj.titles.push(title)
+                }
+            }
+        }
+        return acc
+    }, [])
+}
+
+function getFilmCreditRange(films) {
+    films.sort((a, b) => {
+        return a.date > b.date ? 1 : -1
+    })
+
+    return {
+        start: new Date(films[0].date.getTime()),
+        end: new Date(films[films.length - 1].date.getTime()),
+    }
+}
+
+function fillEmptyDates(actorRevenue, range1, range2) {
+    const start = range1.start < range2.start ? range1.start : range2.start
+
+    const end = range1.end > range2.end ? range1.end : range2.end
+
+    let next = start
+
+    return actorRevenue.reduce((acc, curr) => {
+        while (curr.date.getFullYear() != next.getFullYear() && next < end) {
+            acc.push({
+                date: new Date(next.getTime()),
+                revenue: 0,
+                actor: actorRevenue[0].actor,
+                id: null,
+            })
+            next.setFullYear(next.getFullYear() + 1)
+            if (next > end) {
+                return acc
+            }
+        }
+        acc.push(curr)
+        next.setFullYear(next.getFullYear() + 1)
+        return acc
+    }, [])
 }
 
 // function combineCostarringRevenue(revenue, combined = []) {
@@ -284,6 +329,9 @@ export const data = {
     separateMarvelCredits,
     getRevenueData,
     extractActorFilmRevenue,
+    combineYearlyFilmCredits,
+    getFilmCreditRange,
+    fillEmptyDates,
     // combineCostarringRevenue,
     assignDefaultValues,
 }

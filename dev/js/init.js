@@ -195,11 +195,6 @@ function populatePageData(actors) {
     return completed.promise()
 }
 
-// Information
-// Name
-// Picture
-// Birthday/Place
-
 function injectOverviewInfo(actors) {
     $('#actor-1 .portrait').attr(
         'src',
