@@ -45,12 +45,12 @@ function compareCharacterName(char1, char2) {
 
 function getCreditTypeData(actor) {
     const credits = [
-        {name: 'Film Actor', value: actor.movie_credits.cast.length},
-        {name: 'TV Actor', value: actor.tv_credits.cast.length},
-        {name: 'Film Production', value: actor.movie_credits.crew.length},
-        {name: 'TV Production', value: actor.tv_credits.crew.length},
+        {type: 'Film Actor', value: actor.movie_credits.cast.length},
+        {type: 'TV Actor', value: actor.tv_credits.cast.length},
+        {type: 'Film Production', value: actor.movie_credits.crew.length},
+        {type: 'TV Production', value: actor.tv_credits.crew.length},
     ]
-    credits.columns = ['name', 'values']
+    credits.columns = ['type', 'value']
     return credits
 }
 

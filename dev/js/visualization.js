@@ -212,13 +212,15 @@ function buildCreditTypeWidget(actors) {
     const actor2Data = data.getCreditTypeData(actors.actor2)
 
     const actor1Chart = vis.PieChart(actor1Data, {
-        name: (actor1Data) => actor1Data.name,
+        header: actors.actor1.name,
+        type: (actor1Data) => actor1Data.type,
         value: (actor1Data) => actor1Data.value,
         width: 300,
         height: 300,
     })
     const actor2Chart = vis.PieChart(actor2Data, {
-        name: (actor2Data) => actor2Data.name,
+        header: actors.actor2.name,
+        type: (actor2Data) => actor2Data.type,
         value: (actor2Data) => actor2Data.value,
         width: 300,
         height: 300,
@@ -229,10 +231,12 @@ function buildCreditTypeWidget(actors) {
 // Copyright 2021 Observable, Inc.
 // Released under the ISC license.
 // https://observablehq.com/@d3/pie-chart
+// Modified by Julian Edwards
 function PieChart(
     data,
     {
-        name = ([x]) => x, // given d in data, returns the (ordinal) label
+        header, // Header/name of pie chart
+        type = ([x]) => x, // given d in data, returns the (ordinal) label
         value = ([, y]) => y, // given d in data, returns the (quantitative) value
         title, // given d in data, returns the title text
         width = 640, // outer width, in pixels
@@ -250,7 +254,7 @@ function PieChart(
     } = {}
 ) {
     // Compute values.
-    const N = d3.map(data, name)
+    const N = d3.map(data, type)
     const V = d3.map(data, value)
     const I = d3.range(N.length).filter((i) => !isNaN(V[i]))
 
@@ -292,7 +296,7 @@ function PieChart(
         .create('svg')
         .attr('width', width)
         .attr('height', height)
-        .attr('viewBox', [-width / 2, -height / 2, width, height])
+        .attr('viewBox', [-width / 2, -height / 2, width, height + 20])
         .attr('style', 'max-width: 100%; height: auto; height: intrinsic;')
 
     svg.append('g')
@@ -325,6 +329,12 @@ function PieChart(
         .attr('y', (_, i) => `${i * 1.2}em`)
         .attr('font-weight', (_, i) => (i ? null : 'bold'))
         .text((d) => d)
+
+    if (header)
+        svg.append('text')
+            .text(header)
+            .style('text-anchor', 'middle')
+            .attr('y', outerRadius + 18)
 
     return Object.assign(svg.node(), {scales: {color}})
 }
