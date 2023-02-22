@@ -11,21 +11,19 @@
   <body>
     <main>
       <header>
-        <h1>Marvel Actor Comparator</h1>
+        <div>
+          <img src="./img/Marvel_Logo.svg" />
+          <h1>Actor Comparator</h1>
+        </div>
       </header>
       <div id="overview">
-        <div id="actor-1">
-          <div>
-            <img class="portrait" src="" />
-            <h2 class="name"></h2>
-          </div>
+        <img id="actor-1-img" class="portrait" src="" />
+        <div>
+          <h2 id="actor-1-name" class="name"></h2>
+          <h3>vs</h3>
+          <h2 id="actor-2-name" class="name"></h2>
         </div>
-        <div id="actor-2">
-          <div>
-            <h2 class="name"></h2>
-            <img class="portrait" src="" />
-          </div>
-        </div>
+        <img id="actor-2-img" class="portrait" src="" />
       </div>
       <div id="widgets">
         <div id="role-pop" class="widget">
@@ -49,6 +47,14 @@
         </div>
       </div>
     </main>
+    <footer>
+      <div id="tmdb-attribution">
+        <h5>All movie and actor data courtesy of</h5>
+        <a href="https://www.themoviedb.org"
+          ><img src="./img/tmdblogo.svg" alt="The Movie DB"
+        /></a>
+      </div>
+    </footer>
     <script src="./js/main.js" type="module"></script>
   </body>
 </html>

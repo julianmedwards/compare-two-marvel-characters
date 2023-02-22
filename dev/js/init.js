@@ -196,17 +196,17 @@ function populatePageData(actors) {
 }
 
 function injectOverviewInfo(actors) {
-    $('#actor-1 .portrait').attr(
+    $('#actor-1-img').attr(
         'src',
         `https://image.tmdb.org/t/p/w500${actors.actor1.profile_path}`
     )
-    $('#actor-2 .portrait').attr(
+    $('#actor-2-img').attr(
         'src',
         `https://image.tmdb.org/t/p/w500/${actors.actor2.profile_path}`
     )
 
-    $('#actor-1 .name').text(actors.actor1.name)
-    $('#actor-2 .name').text(actors.actor2.name)
+    $('#actor-1-name').text(actors.actor1.name)
+    $('#actor-2-name').text(actors.actor2.name)
 
     $('#actor-1 .dob').text(actors.actor1.birthday)
     $('#actor-2 .dob').text(actors.actor2.birthday)
